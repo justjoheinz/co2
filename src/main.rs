@@ -59,6 +59,10 @@ struct Cli {
     /// Read emissions JSON from a file instead of querying AWS
     #[arg(long, value_name = "FILE", conflicts_with = "from", conflicts_with = "to", conflicts_with = "profile")]
     data: Option<PathBuf>,
+
+    /// Override the title displayed in the TUI
+    #[arg(long, value_name = "TEXT")]
+    title: Option<String>,
 }
 
 #[tokio::main]
@@ -83,6 +87,8 @@ async fn main() -> anyhow::Result<()> {
         };
         (results, title)
     };
+
+    let title = cli.title.unwrap_or(title);
 
     enable_raw_mode()?;
     let mut stdout = io::stdout();

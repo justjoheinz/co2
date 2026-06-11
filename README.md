@@ -4,6 +4,8 @@ Interactive terminal UI for AWS Carbon Footprint data.
 
 Queries the [AWS Sustainability API](https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_sustainability_GetEstimatedCarbonEmissions.html) and displays monthly emissions broken down by region and service, with a stacked bar chart, ranked tables, and a service × month heatmap.
 
+![screenshot](screenshot.png)
+
 ## Usage
 
 ```
