@@ -44,9 +44,9 @@ FROM FILE
 ",
 )]
 struct Cli {
-    /// AWS profile name (from ~/.aws/config)
-    #[arg(short, long, default_value = "default", conflicts_with = "data")]
-    profile: String,
+    /// AWS profile name (from ~/.aws/config); falls back to $AWS_PROFILE
+    #[arg(short, long, conflicts_with = "data")]
+    profile: Option<String>,
 
     /// Start of query range: YYYY or YYYY-MM (required)
     #[arg(long, value_name = "YYYY[-MM]", conflicts_with = "data", required_unless_present = "data")]
@@ -77,13 +77,16 @@ async fn main() -> anyhow::Result<()> {
         let title = year_range_title(&results, path.to_string_lossy().as_ref());
         (results, title)
     } else {
+        let profile = cli.profile
+            .or_else(|| std::env::var("AWS_PROFILE").ok())
+            .ok_or_else(|| anyhow::anyhow!("no AWS profile: set --profile or $AWS_PROFILE"))?;
         let from = cli.from.expect("--from is required without --data");
         let to = cli.to.map(|e| e.0).unwrap_or_else(YearMonth::current);
-        let results = aws::get_estimated_carbon_emissions(&cli.profile, from, to).await?;
+        let results = aws::get_estimated_carbon_emissions(&profile, from, to).await?;
         let title = if from.year == to.year && from.month == 1 && to.month == 12 {
-            format!("{} — {}", cli.profile, from.year)
+            format!("{} — {}", profile, from.year)
         } else {
-            format!("{} — {from}–{to}", cli.profile)
+            format!("{} — {from}–{to}", profile)
         };
         (results, title)
     };

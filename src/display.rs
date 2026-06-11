@@ -72,11 +72,18 @@ pub struct Heatmap<'a> {
     rows: Vec<(String, Vec<f64>)>,
     col_labels: Vec<String>,
     title: &'a str,
+    /// Optional totals row rendered at the bottom with its own color scale
+    total_row: Option<(String, Vec<f64>)>,
 }
 
 impl<'a> Heatmap<'a> {
     pub fn new(title: &'a str, rows: Vec<(String, Vec<f64>)>, col_labels: Vec<String>) -> Self {
-        Self { rows, col_labels, title }
+        Self { rows, col_labels, title, total_row: None }
+    }
+
+    pub fn total_row(mut self, label: String, values: Vec<f64>) -> Self {
+        self.total_row = Some((label, values));
+        self
     }
 }
 
@@ -96,12 +103,25 @@ impl Widget for Heatmap<'_> {
             .flat_map(|(_, vals)| vals.iter().copied())
             .fold(0.0_f64, f64::max);
 
+        let total_max = self
+            .total_row
+            .iter()
+            .flat_map(|(_, vals)| vals.iter().copied())
+            .fold(0.0_f64, f64::max);
+
         // Column width: distribute inner width evenly across label + cols
         let n_cols = self.col_labels.len();
         if n_cols == 0 {
             return;
         }
-        let label_w = self.rows.iter().map(|(l, _)| l.len()).max().unwrap_or(0).max(8) as u16;
+        let label_w = self
+            .rows
+            .iter()
+            .chain(self.total_row.iter())
+            .map(|(l, _)| l.len())
+            .max()
+            .unwrap_or(0)
+            .max(8) as u16;
         let cell_w = ((inner.width.saturating_sub(label_w + 1)) / n_cols as u16).max(1);
 
         // Header row (col labels)
@@ -112,29 +132,41 @@ impl Widget for Heatmap<'_> {
             x += cell_w;
         }
 
+        let render_row = |buf: &mut Buffer, y: u16, row_label: &str, values: &[f64], row_max: f64, bold_label: bool| {
+            let truncated: String = row_label.chars().take(label_w as usize).collect();
+            let label_style = if bold_label { Style::default().bold() } else { Style::default() };
+            buf.set_string(inner.x, y, &truncated, label_style);
+
+            let mut x = inner.x + label_w + 1;
+            for &val in values {
+                let intensity = if row_max > 0.0 { val / row_max } else { 0.0 };
+                let bg = heat_color(intensity);
+                let fg = if intensity > 0.55 { Color::Black } else { Color::White };
+                let cell_label = fmt_cell(val, cell_w as usize);
+                let padded = format!("{:width$}", cell_label, width = cell_w as usize);
+                buf.set_string(x, y, &padded, Style::default().fg(fg).bg(bg));
+                x += cell_w;
+            }
+        };
+
         // Data rows
-        for (row_idx, (row_label, values)) in self.rows.iter().enumerate() {
+        let mut row_idx = 0usize;
+        for (row_label, values) in &self.rows {
             let y = inner.y + 1 + row_idx as u16;
             if y >= inner.y + inner.height {
                 break;
             }
+            render_row(buf, y, row_label, values, max, false);
+            row_idx += 1;
+        }
 
-            // Row label
-            let truncated: String = row_label.chars().take(label_w as usize).collect();
-            buf.set_string(inner.x, y, &truncated, Style::default());
-
-            // Cells
-            let mut x = inner.x + label_w + 1;
-            for &val in values {
-                let intensity = if max > 0.0 { val / max } else { 0.0 };
-                let bg = heat_color(intensity);
-                // Choose fg so it contrasts with the background brightness
-                let fg = if intensity > 0.55 { Color::Black } else { Color::White };
-                let label = fmt_cell(val, cell_w as usize);
-                // Pad to exactly cell_w with spaces
-                let padded = format!("{:width$}", label, width = cell_w as usize);
-                buf.set_string(x, y, &padded, Style::default().fg(fg).bg(bg));
-                x += cell_w;
+        // Separator + total row
+        if let Some((total_label, total_values)) = &self.total_row {
+            // skip blank separator row
+            row_idx += 1;
+            let y = inner.y + 1 + row_idx as u16;
+            if y < inner.y + inner.height {
+                render_row(buf, y, total_label, total_values, total_max, true);
             }
         }
     }
@@ -415,6 +447,12 @@ fn render_heatmap(f: &mut Frame, area: Rect, results: &[EmissionsResult]) {
         })
         .collect();
 
+    // Total row: sum of all services (not just top 8) per month
+    let total_vals: Vec<f64> = months
+        .iter()
+        .map(|m| lbm_by_month.get(m).copied().unwrap_or(0.0))
+        .collect();
+
     // Show only the month part (MM) as column labels so they fit in narrow cells
     let col_labels: Vec<String> = months
         .iter()
@@ -422,7 +460,8 @@ fn render_heatmap(f: &mut Frame, area: Rect, results: &[EmissionsResult]) {
         .collect();
 
     f.render_widget(
-        Heatmap::new(" Service × Month (LBM) ", heatmap_rows, col_labels),
+        Heatmap::new(" Service × Month (LBM) ", heatmap_rows, col_labels)
+            .total_row("Total".to_string(), total_vals),
         area,
     );
 }
