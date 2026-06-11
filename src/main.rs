@@ -1,0 +1,141 @@
+mod aws;
+mod display;
+mod period;
+
+use period::{YearMonth, YearMonthEnd};
+
+use clap::Parser;
+use crossterm::{
+    event::{self, Event, KeyCode},
+    execute,
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+};
+use ratatui::{Terminal, backend::CrosstermBackend};
+use std::{io, path::PathBuf};
+
+#[derive(Parser, Debug)]
+#[command(
+    name = "co2",
+    about = "AWS Carbon Footprint Reporter — interactive TUI for CO2 emissions data",
+    long_about = "\
+AWS Carbon Footprint Reporter
+
+Queries the AWS Sustainability API and displays an interactive terminal report
+with monthly breakdowns, top regions, top services, and a service × month
+heatmap. Press 'q' or Esc to exit.
+
+LIVE QUERY
+  co2 --profile myprofile --from 2024
+  co2 --profile myprofile --from 2024-06 --to 2025-03
+
+  --from is required. --to is optional and defaults to the current month.
+  Both accept YYYY (Jan for --from, Dec for --to) or YYYY-MM.
+
+FROM FILE
+  co2 --data results.json
+
+  Accepts the raw JSON output of:
+    aws sustainability get-estimated-carbon-emissions \\
+      --region us-east-1 --granularity MONTHLY \\
+      --group-by REGION SERVICE \\
+      --time-period Start=YYYY-MM-DD,End=YYYY-MM-DD
+
+  --profile, --from, and --to are forbidden when --data is used.
+",
+)]
+struct Cli {
+    /// AWS profile name (from ~/.aws/config)
+    #[arg(short, long, default_value = "default", conflicts_with = "data")]
+    profile: String,
+
+    /// Start of query range: YYYY or YYYY-MM (required)
+    #[arg(long, value_name = "YYYY[-MM]", conflicts_with = "data", required_unless_present = "data")]
+    from: Option<YearMonth>,
+
+    /// End of query range: YYYY or YYYY-MM, inclusive; YYYY expands to Dec of that year (default: current month)
+    #[arg(long, value_name = "YYYY[-MM]", conflicts_with = "data")]
+    to: Option<YearMonthEnd>,
+
+    /// Read emissions JSON from a file instead of querying AWS
+    #[arg(long, value_name = "FILE", conflicts_with = "from", conflicts_with = "to", conflicts_with = "profile")]
+    data: Option<PathBuf>,
+}
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let cli = Cli::parse();
+    let (results, title) = if let Some(path) = &cli.data {
+        let contents = std::fs::read_to_string(path)
+            .map_err(|e| anyhow::anyhow!("failed to read {}: {}", path.display(), e))?;
+        let cli_output: aws::CliOutput = serde_json::from_str(&contents)
+            .map_err(|e| anyhow::anyhow!("failed to parse JSON: {}", e))?;
+        let results = Vec::<aws::EmissionsResult>::try_from(cli_output)?;
+        let title = year_range_title(&results, path.to_string_lossy().as_ref());
+        (results, title)
+    } else {
+        let from = cli.from.expect("--from is required without --data");
+        let to = cli.to.map(|e| e.0).unwrap_or_else(YearMonth::current);
+        let results = aws::get_estimated_carbon_emissions(&cli.profile, from, to).await?;
+        let title = if from.year == to.year && from.month == 1 && to.month == 12 {
+            format!("{} — {}", cli.profile, from.year)
+        } else {
+            format!("{} — {from}–{to}", cli.profile)
+        };
+        (results, title)
+    };
+
+    enable_raw_mode()?;
+    let mut stdout = io::stdout();
+    execute!(stdout, EnterAlternateScreen)?;
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend)?;
+
+    let mut state = display::AppState::new();
+    let result = run_loop(&mut terminal, &results, &title, &mut state);
+
+    // Always restore terminal, even if the loop errored
+    disable_raw_mode()?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
+    result
+}
+
+fn year_range_title(results: &[aws::EmissionsResult], fallback: &str) -> String {
+    let mut months: Vec<&str> = results.iter().map(|r| r.month.as_str()).collect();
+    months.sort();
+    months.dedup();
+    match (months.first(), months.last()) {
+        (Some(first), Some(last)) => {
+            let first_year = &first[..4];
+            let last_year = &last[..4];
+            if first_year == last_year {
+                first_year.to_string()
+            } else {
+                format!("{first_year}–{last_year}")
+            }
+        }
+        _ => fallback.to_string(),
+    }
+}
+
+fn run_loop(
+    terminal: &mut ratatui::Terminal<ratatui::backend::CrosstermBackend<io::Stdout>>,
+    results: &[aws::EmissionsResult],
+    title: &str,
+    state: &mut display::AppState,
+) -> anyhow::Result<()> {
+    loop {
+        terminal.draw(|f| display::render(f, results, title, state))?;
+
+        if let Event::Key(key) = event::read()? {
+            match key.code {
+                KeyCode::Char('q') | KeyCode::Esc => break,
+                KeyCode::Up   | KeyCode::Char('k') => state.scroll_up(1),
+                KeyCode::Down | KeyCode::Char('j') => state.scroll_down(1),
+                KeyCode::PageUp                    => state.scroll_up(10),
+                KeyCode::PageDown                  => state.scroll_down(10),
+                _ => {}
+            }
+        }
+    }
+    Ok(())
+}
