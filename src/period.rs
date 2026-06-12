@@ -83,3 +83,122 @@ impl FromStr for YearMonthEnd {
         parse_year_month(s, 12).map(YearMonthEnd)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── YearMonth parsing ─────────────────────────────────────────────────────
+
+    #[test]
+    fn yyyy_parses_as_january() {
+        let ym: YearMonth = "2024".parse().unwrap();
+        assert_eq!(ym, YearMonth { year: 2024, month: 1 });
+    }
+
+    #[test]
+    fn yyyy_mm_parses_explicit_month() {
+        let ym: YearMonth = "2024-06".parse().unwrap();
+        assert_eq!(ym, YearMonth { year: 2024, month: 6 });
+    }
+
+    #[test]
+    fn rejects_month_out_of_range() {
+        assert!("2024-00".parse::<YearMonth>().is_err());
+        assert!("2024-13".parse::<YearMonth>().is_err());
+        assert!("2024-99".parse::<YearMonth>().is_err());
+    }
+
+    #[test]
+    fn rejects_malformed_input() {
+        assert!("".parse::<YearMonth>().is_err());
+        assert!("20".parse::<YearMonth>().is_err());
+        assert!("2024-1".parse::<YearMonth>().is_err());
+        assert!("2024-001".parse::<YearMonth>().is_err());
+        assert!("2024/01".parse::<YearMonth>().is_err());
+        assert!("abcd".parse::<YearMonth>().is_err());
+        assert!("abcd-ef".parse::<YearMonth>().is_err());
+    }
+
+    // ── YearMonthEnd parsing ──────────────────────────────────────────────────
+
+    #[test]
+    fn end_yyyy_parses_as_december() {
+        let yme: YearMonthEnd = "2024".parse().unwrap();
+        assert_eq!(yme.0, YearMonth { year: 2024, month: 12 });
+    }
+
+    #[test]
+    fn end_yyyy_mm_parses_explicit_month() {
+        let yme: YearMonthEnd = "2024-03".parse().unwrap();
+        assert_eq!(yme.0, YearMonth { year: 2024, month: 3 });
+    }
+
+    #[test]
+    fn end_rejects_invalid_month() {
+        assert!("2024-13".parse::<YearMonthEnd>().is_err());
+    }
+
+    // ── Display ───────────────────────────────────────────────────────────────
+
+    #[test]
+    fn display_zero_pads_month() {
+        assert_eq!(
+            YearMonth { year: 2024, month: 3 }.to_string(),
+            "2024-03"
+        );
+        assert_eq!(
+            YearMonth { year: 2024, month: 12 }.to_string(),
+            "2024-12"
+        );
+    }
+
+    // ── Ordering ──────────────────────────────────────────────────────────────
+
+    #[test]
+    fn ordering_is_chronological() {
+        let jan_2024 = YearMonth { year: 2024, month: 1 };
+        let dec_2024 = YearMonth { year: 2024, month: 12 };
+        let jan_2025 = YearMonth { year: 2025, month: 1 };
+        assert!(jan_2024 < dec_2024);
+        assert!(dec_2024 < jan_2025);
+        assert!(jan_2024 < jan_2025);
+    }
+
+    // ── start_timestamp / end_timestamp ───────────────────────────────────────
+
+    #[test]
+    fn start_timestamp_is_first_second_of_month_utc() {
+        // 2024-01-01 00:00:00 UTC
+        assert_eq!(
+            YearMonth { year: 2024, month: 1 }.start_timestamp(),
+            1_704_067_200
+        );
+    }
+
+    #[test]
+    fn end_timestamp_is_first_second_of_next_month_utc() {
+        // First second of 2024-07-01 UTC
+        assert_eq!(
+            YearMonth { year: 2024, month: 6 }.end_timestamp(),
+            1_719_792_000
+        );
+    }
+
+    #[test]
+    fn end_timestamp_rolls_year_over_in_december() {
+        // First second of 2025-01-01 UTC
+        assert_eq!(
+            YearMonth { year: 2024, month: 12 }.end_timestamp(),
+            1_735_689_600
+        );
+    }
+
+    #[test]
+    fn end_timestamp_strictly_after_start_timestamp() {
+        for month in 1..=12 {
+            let ym = YearMonth { year: 2024, month };
+            assert!(ym.end_timestamp() > ym.start_timestamp(), "month {month}");
+        }
+    }
+}
