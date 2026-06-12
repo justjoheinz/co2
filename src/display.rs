@@ -21,15 +21,21 @@ pub struct Heatmap<'a> {
     title: &'a str,
     /// Optional totals row rendered at the bottom with its own color scale
     total_row: Option<(String, Vec<f64>)>,
+    selected_col: Option<usize>,
 }
 
 impl<'a> Heatmap<'a> {
     pub fn new(title: &'a str, rows: Vec<(String, Vec<f64>)>, col_labels: Vec<String>) -> Self {
-        Self { rows, col_labels, title, total_row: None }
+        Self { rows, col_labels, title, total_row: None, selected_col: None }
     }
 
     pub fn total_row(mut self, label: String, values: Vec<f64>) -> Self {
         self.total_row = Some((label, values));
+        self
+    }
+
+    pub fn selected_col(mut self, col: Option<usize>) -> Self {
+        self.selected_col = col;
         self
     }
 }
@@ -73,25 +79,36 @@ impl Widget for Heatmap<'_> {
 
         // Header row (col labels)
         let mut x = inner.x + label_w + 1;
-        for label in &self.col_labels {
+        for (col_i, label) in self.col_labels.iter().enumerate() {
             let truncated: String = label.chars().take(cell_w as usize).collect();
-            buf.set_string(x, inner.y, &truncated, Style::default().bold());
+            let style = if self.selected_col == Some(col_i) {
+                Style::default().bold().fg(Color::Yellow)
+            } else {
+                Style::default().bold()
+            };
+            buf.set_string(x, inner.y, &truncated, style);
             x += cell_w;
         }
 
+        let selected_col = self.selected_col;
         let render_row = |buf: &mut Buffer, y: u16, row_label: &str, values: &[f64], row_max: f64, bold_label: bool| {
             let truncated: String = row_label.chars().take(label_w as usize).collect();
             let label_style = if bold_label { Style::default().bold() } else { Style::default() };
             buf.set_string(inner.x, y, &truncated, label_style);
 
             let mut x = inner.x + label_w + 1;
-            for &val in values {
+            for (col_i, &val) in values.iter().enumerate() {
                 let intensity = if row_max > 0.0 { val / row_max } else { 0.0 };
                 let bg = heat_color(intensity);
                 let fg = if intensity > 0.55 { Color::Black } else { Color::White };
                 let cell_label = fmt_cell(val, cell_w as usize);
                 let padded = format!("{:width$}", cell_label, width = cell_w as usize);
-                buf.set_string(x, y, &padded, Style::default().fg(fg).bg(bg));
+                let style = if selected_col == Some(col_i) {
+                    Style::default().fg(fg).bg(bg).bold()
+                } else {
+                    Style::default().fg(fg).bg(bg)
+                };
+                buf.set_string(x, y, &padded, style);
                 x += cell_w;
             }
         };
@@ -151,13 +168,14 @@ fn heat_color(t: f64) -> Color {
 pub struct AppState {
     pub monthly_table: TableState,
     pub monthly_len: usize,
+    pub selected_month_idx: Option<usize>,
 }
 
 impl AppState {
     pub fn new() -> Self {
         let mut monthly_table = TableState::default();
         monthly_table.select(Some(0));
-        Self { monthly_table, monthly_len: 0 }
+        Self { monthly_table, monthly_len: 0, selected_month_idx: None }
     }
 
     pub fn scroll_up(&mut self, n: usize) {
@@ -183,10 +201,12 @@ pub fn render(f: &mut Frame, results: &[EmissionsResult], title: &str, state: &m
         ])
         .split(f.area());
 
+    state.selected_month_idx = state.monthly_table.selected();
+
     render_header(f, chunks[0], results, title);
-    render_chart(f, chunks[1], results);
+    render_chart(f, chunks[1], results, state);
     render_tables_row(f, chunks[2], results, state);
-    render_heatmap(f, chunks[3], results);
+    render_heatmap(f, chunks[3], results, state);
 }
 
 // ── Header ───────────────────────────────────────────────────────────────────
@@ -229,7 +249,7 @@ fn render_header(f: &mut Frame, area: Rect, results: &[EmissionsResult], title: 
 
 // ── Monthly chart (full width) ───────────────────────────────────────────────
 
-fn render_chart(f: &mut Frame, area: Rect, results: &[EmissionsResult]) {
+fn render_chart(f: &mut Frame, area: Rect, results: &[EmissionsResult], state: &AppState) {
     let lbm_by_month = sum_by(results, |r| r.month.clone(), |r| r.lbm);
     let mbm_by_month = sum_by(results, |r| r.month.clone(), |r| r.mbm);
     let months: Vec<String> = lbm_by_month.keys().cloned().collect();
@@ -243,54 +263,38 @@ fn render_chart(f: &mut Frame, area: Rect, results: &[EmissionsResult]) {
         .collect();
 
     let y_max = lbm_data.iter().map(|(_, y)| *y).fold(0.0_f64, f64::max) * 1.1;
-    // Collect Jan (-01), Jun (-06), and Dec (-12) as natural boundaries.
-    let raw: Vec<usize> = months.iter().enumerate()
-        .filter(|(_, m)| m.ends_with("-01") || m.ends_with("-06") || m.ends_with("-12"))
-        .map(|(i, _)| i)
-        .collect();
-    // Merge adjacent Dec+Jan pairs (year boundary crossing): keep Jan, drop Dec.
-    let mut label_indices: Vec<usize> = Vec::new();
-    let mut i = 0;
-    while i < raw.len() {
-        let idx = raw[i];
-        if i + 1 < raw.len() && raw[i + 1] - idx <= 1 {
-            label_indices.push(if months[raw[i + 1]].ends_with("-01") { raw[i + 1] } else { idx });
-            i += 2;
-        } else {
-            label_indices.push(idx);
-            i += 1;
-        }
-    }
-    // Need at least 2 labels for ratatui to render them; fall back to first/last.
-    if label_indices.len() < 2 {
-        if !label_indices.contains(&0)       { label_indices.insert(0, 0); }
-        if !label_indices.contains(&(n - 1)) { label_indices.push(n - 1); }
-    }
-    let x_labels: Vec<Line> = label_indices.iter()
-        .map(|&i| Line::from(months[i][5..7].to_string()))
-        .collect();
 
-    let datasets = vec![
+    let marker_data: Vec<(f64, f64)> = state.selected_month_idx
+        .map(|i| vec![(i as f64, 0.0), (i as f64, y_max)])
+        .unwrap_or_default();
+
+    let mut datasets = vec![
         Dataset::default()
-            .name("LBM")
             .marker(symbols::Marker::Braille)
             .graph_type(GraphType::Line)
             .style(Style::default().fg(Color::Cyan))
             .data(&lbm_data),
         Dataset::default()
-            .name("MBM")
             .marker(symbols::Marker::Braille)
             .graph_type(GraphType::Line)
             .style(Style::default().fg(Color::Blue))
             .data(&mbm_data),
     ];
+    if !marker_data.is_empty() {
+        datasets.push(
+            Dataset::default()
+                .marker(symbols::Marker::Braille)
+                .graph_type(GraphType::Line)
+                .style(Style::default().fg(Color::Yellow))
+                .data(&marker_data),
+        );
+    }
 
     let chart = Chart::new(datasets)
         .block(Block::default().title(" Monthly LBM + MBM ").borders(Borders::ALL))
         .x_axis(
             Axis::default()
-                .bounds([0.0, (n as f64) - 1.0])
-                .labels(x_labels),
+                .bounds([0.0, (n as f64) - 1.0]),
         )
         .y_axis(
             Axis::default()
@@ -387,7 +391,7 @@ fn render_ranked_table(
 
 // ── Service × Month heatmap ───────────────────────────────────────────────────
 
-fn render_heatmap(f: &mut Frame, area: Rect, results: &[EmissionsResult]) {
+fn render_heatmap(f: &mut Frame, area: Rect, results: &[EmissionsResult], state: &AppState) {
     let lbm_by_month = sum_by(results, |r| r.month.clone(), |r| r.lbm);
     let months: Vec<String> = lbm_by_month.keys().cloned().collect();
 
@@ -422,7 +426,8 @@ fn render_heatmap(f: &mut Frame, area: Rect, results: &[EmissionsResult]) {
 
     f.render_widget(
         Heatmap::new(" Service × Month (LBM) ", heatmap_rows, col_labels)
-            .total_row("Total".to_string(), total_vals),
+            .total_row("Total".to_string(), total_vals)
+            .selected_col(state.selected_month_idx),
         area,
     );
 }
