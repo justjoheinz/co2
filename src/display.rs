@@ -1,69 +1,16 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style, Stylize},
+    symbols,
     text::{Line, Span},
-    widgets::{Block, Borders, Cell, Paragraph, Row, Scrollbar, ScrollbarOrientation, ScrollbarState, Table, TableState, Widget},
+    widgets::{Axis, Block, Borders, Cell, Chart, Dataset, GraphType, Paragraph, Row, Scrollbar, ScrollbarOrientation, ScrollbarState, Table, TableState, Widget},
     Frame,
 };
-use ratatui_stacked_bar::StackedSparkline;
 
 use crate::aws::EmissionsResult;
-
-// ── Aggregation helpers ──────────────────────────────────────────────────────
-
-// Returns a BTreeMap so iteration is always in sorted key order.
-fn sum_by<K, F, G>(results: &[EmissionsResult], key: F, val: G) -> BTreeMap<K, f64>
-where
-    K: Ord,
-    F: Fn(&EmissionsResult) -> K,
-    G: Fn(&EmissionsResult) -> f64,
-{
-    let mut map: BTreeMap<K, f64> = BTreeMap::new();
-    for r in results {
-        *map.entry(key(r)).or_default() += val(r);
-    }
-    map
-}
-
-fn top_n(map: &BTreeMap<String, f64>, n: usize) -> Vec<(String, f64)> {
-    let mut v: Vec<_> = map.iter().map(|(k, &v)| (k.clone(), v)).collect();
-    v.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-    v.truncate(n);
-    v
-}
-
-// ── Formatting ───────────────────────────────────────────────────────────────
-
-fn fmt_co2(v: f64) -> String {
-    format!("{:.2} MTCO2e", v)
-}
-
-fn fmt_cell(v: f64, width: usize) -> String {
-    if v == 0.0 {
-        return String::new();
-    }
-    // Try progressively shorter representations until one fits
-    for s in [
-        format!("{:.2}", v),
-        format!("{:.1}", v),
-        format!("{:.0}", v),
-    ] {
-        if s.len() <= width {
-            return s;
-        }
-    }
-    String::new()
-}
-
-fn fmt_pct(v: f64, total: f64) -> String {
-    if total == 0.0 {
-        "  0.0%".to_string()
-    } else {
-        format!("{:.1}%", v / total * 100.0)
-    }
-}
+use crate::summary::{fmt_cell, fmt_co2, fmt_pct, sum_by, top_n};
 
 // ── Heatmap widget ───────────────────────────────────────────────────────────
 
@@ -172,42 +119,6 @@ impl Widget for Heatmap<'_> {
     }
 }
 
-// ── Stretched stacked sparkline ──────────────────────────────────────────────
-
-/// Wraps `StackedSparkline` and repeats each data point so bars fill the full
-/// width of the area, regardless of how many data points there are.
-struct StretchedSparkline {
-    series: Vec<(Vec<usize>, Color)>,
-    max: usize,
-}
-
-impl StretchedSparkline {
-    fn new(series: Vec<(Vec<usize>, Color)>, max: usize) -> Self {
-        Self { series, max }
-    }
-}
-
-impl Widget for StretchedSparkline {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let n = self.series.first().map(|(v, _)| v.len()).unwrap_or(1).max(1);
-        let repeat = (area.width as usize / n).max(1);
-
-        let stretched: Vec<(Vec<usize>, Color)> = self
-            .series
-            .into_iter()
-            .map(|(vals, color)| {
-                let v = vals.iter().flat_map(|&x| std::iter::repeat(x).take(repeat)).collect();
-                (v, color)
-            })
-            .collect();
-
-        let mut sparkline = StackedSparkline::default().max(self.max);
-        for (v, c) in stretched {
-            sparkline = sparkline.add_data(v, c);
-        }
-        sparkline.render(area, buf);
-    }
-}
 
 fn heat_color(t: f64) -> Color {
     // Multi-stop gradient: black → blue → cyan → green → yellow → orange → red
@@ -265,16 +176,16 @@ pub fn render(f: &mut Frame, results: &[EmissionsResult], title: &str, state: &m
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(7),  // header (outer border 2 + inner border 2 + label + value + gap)
-            Constraint::Length(16), // monthly chart + table (border 2 + header 1 + 12 months + 1)
-            Constraint::Length(14), // regions + services
+            Constraint::Length(7),  // header
+            Constraint::Length(16), // chart (full width)
+            Constraint::Length(14), // monthly table + top regions + top services
             Constraint::Min(10),    // heatmap
         ])
         .split(f.area());
 
     render_header(f, chunks[0], results, title);
-    render_monthly(f, chunks[1], results, state);
-    render_region_service(f, chunks[2], results);
+    render_chart(f, chunks[1], results);
+    render_tables_row(f, chunks[2], results, state);
     render_heatmap(f, chunks[3], results);
 }
 
@@ -316,79 +227,129 @@ fn render_header(f: &mut Frame, area: Rect, results: &[EmissionsResult], title: 
     }
 }
 
-// ── Monthly breakdown ────────────────────────────────────────────────────────
+// ── Monthly chart (full width) ───────────────────────────────────────────────
 
-fn render_monthly(f: &mut Frame, area: Rect, results: &[EmissionsResult], state: &mut AppState) {
+fn render_chart(f: &mut Frame, area: Rect, results: &[EmissionsResult]) {
+    let lbm_by_month = sum_by(results, |r| r.month.clone(), |r| r.lbm);
+    let mbm_by_month = sum_by(results, |r| r.month.clone(), |r| r.mbm);
+    let months: Vec<String> = lbm_by_month.keys().cloned().collect();
+    let n = months.len();
+
+    let lbm_data: Vec<(f64, f64)> = months.iter().enumerate()
+        .map(|(i, m)| (i as f64, lbm_by_month.get(m).copied().unwrap_or(0.0)))
+        .collect();
+    let mbm_data: Vec<(f64, f64)> = months.iter().enumerate()
+        .map(|(i, m)| (i as f64, mbm_by_month.get(m).copied().unwrap_or(0.0)))
+        .collect();
+
+    let y_max = lbm_data.iter().map(|(_, y)| *y).fold(0.0_f64, f64::max) * 1.1;
+    // Collect Jan (-01), Jun (-06), and Dec (-12) as natural boundaries.
+    let raw: Vec<usize> = months.iter().enumerate()
+        .filter(|(_, m)| m.ends_with("-01") || m.ends_with("-06") || m.ends_with("-12"))
+        .map(|(i, _)| i)
+        .collect();
+    // Merge adjacent Dec+Jan pairs (year boundary crossing): keep Jan, drop Dec.
+    let mut label_indices: Vec<usize> = Vec::new();
+    let mut i = 0;
+    while i < raw.len() {
+        let idx = raw[i];
+        if i + 1 < raw.len() && raw[i + 1] - idx <= 1 {
+            label_indices.push(if months[raw[i + 1]].ends_with("-01") { raw[i + 1] } else { idx });
+            i += 2;
+        } else {
+            label_indices.push(idx);
+            i += 1;
+        }
+    }
+    // Need at least 2 labels for ratatui to render them; fall back to first/last.
+    if label_indices.len() < 2 {
+        if !label_indices.contains(&0)       { label_indices.insert(0, 0); }
+        if !label_indices.contains(&(n - 1)) { label_indices.push(n - 1); }
+    }
+    let x_labels: Vec<Line> = label_indices.iter()
+        .map(|&i| Line::from(months[i][5..7].to_string()))
+        .collect();
+
+    let datasets = vec![
+        Dataset::default()
+            .name("LBM")
+            .marker(symbols::Marker::Braille)
+            .graph_type(GraphType::Line)
+            .style(Style::default().fg(Color::Cyan))
+            .data(&lbm_data),
+        Dataset::default()
+            .name("MBM")
+            .marker(symbols::Marker::Braille)
+            .graph_type(GraphType::Line)
+            .style(Style::default().fg(Color::Blue))
+            .data(&mbm_data),
+    ];
+
+    let chart = Chart::new(datasets)
+        .block(Block::default().title(" Monthly LBM + MBM ").borders(Borders::ALL))
+        .x_axis(
+            Axis::default()
+                .bounds([0.0, (n as f64) - 1.0])
+                .labels(x_labels),
+        )
+        .y_axis(
+            Axis::default()
+                .bounds([0.0, y_max])
+                .labels(vec![
+                    Line::from("0"),
+                    Line::from(format!("{:.1}", y_max / 2.0)),
+                    Line::from(format!("{:.1}", y_max)),
+                ]),
+        );
+    f.render_widget(chart, area);
+}
+
+// ── Monthly table + Top Regions + Top Services row ───────────────────────────
+
+fn render_tables_row(f: &mut Frame, area: Rect, results: &[EmissionsResult], state: &mut AppState) {
+    let cols = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Ratio(1, 3), Constraint::Ratio(1, 3), Constraint::Ratio(1, 3)])
+        .split(area);
+
+    render_monthly_table(f, cols[0], results, state);
+
+    let total_lbm: f64 = results.iter().map(|r| r.lbm).sum();
+    render_ranked_table(f, cols[1], results, " Top Regions ", total_lbm, 10, |r| r.region.clone());
+    render_ranked_table(f, cols[2], results, " Top Services ", total_lbm, 10, |r| r.service.clone());
+}
+
+fn render_monthly_table(f: &mut Frame, area: Rect, results: &[EmissionsResult], state: &mut AppState) {
     let lbm_by_month = sum_by(results, |r| r.month.clone(), |r| r.lbm);
     let mbm_by_month = sum_by(results, |r| r.month.clone(), |r| r.mbm);
     let months: Vec<String> = lbm_by_month.keys().cloned().collect();
 
     state.monthly_len = months.len();
 
-    let halves = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)])
-        .split(area);
-
-    // Stacked sparkline (LBM bottom, MBM on top)
-    let scale = 1000.0;
-    let lbm_series: Vec<usize> = months.iter().map(|m| (*lbm_by_month.get(m).unwrap_or(&0.0) * scale) as usize).collect();
-    let mbm_series: Vec<usize> = months.iter().map(|m| (*mbm_by_month.get(m).unwrap_or(&0.0) * scale) as usize).collect();
-    let chart_max = lbm_series.iter().zip(mbm_series.iter()).map(|(l, m)| l + m).max().unwrap_or(1);
-
-    let chart_block = Block::default().title(" Monthly LBM + MBM ").borders(Borders::ALL);
-    let chart_inner = chart_block.inner(halves[0]);
-    chart_block.render(halves[0], f.buffer_mut());
-    StretchedSparkline::new(
-        vec![(lbm_series, Color::Cyan), (mbm_series, Color::Blue)],
-        chart_max,
-    )
-    .render(chart_inner, f.buffer_mut());
-
-    // Scrollable table
-    let rows: Vec<Row> = months
-        .iter()
-        .map(|m| {
-            let lbm = lbm_by_month.get(m).copied().unwrap_or(0.0);
-            let mbm = mbm_by_month.get(m).copied().unwrap_or(0.0);
-            Row::new(vec![
-                Cell::from(m.as_str()),
-                Cell::from(fmt_co2(lbm)),
-                Cell::from(fmt_co2(mbm)),
-            ])
-        })
-        .collect();
+    let rows: Vec<Row> = months.iter().map(|m| {
+        let lbm = lbm_by_month.get(m).copied().unwrap_or(0.0);
+        let mbm = mbm_by_month.get(m).copied().unwrap_or(0.0);
+        Row::new(vec![
+            Cell::from(m.as_str()),
+            Cell::from(fmt_co2(lbm)),
+            Cell::from(fmt_co2(mbm)),
+        ])
+    }).collect();
 
     let table = Table::new(
         rows,
-        [Constraint::Length(8), Constraint::Length(16), Constraint::Length(16)],
+        [Constraint::Length(8), Constraint::Fill(1), Constraint::Fill(1)],
     )
     .header(Row::new(["Month", "LBM", "MBM"]).bold())
     .row_highlight_style(Style::default().bold())
-    .block(Block::default().title(" Monthly Values (↑↓ to scroll) ").borders(Borders::ALL));
+    .block(Block::default().title(" Monthly Values (↑↓) ").borders(Borders::ALL));
 
-    let table_area = halves[1];
-    f.render_stateful_widget(table, table_area, &mut state.monthly_table);
+    f.render_stateful_widget(table, area, &mut state.monthly_table);
 
-    // Scrollbar on the right edge of the table
     let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
     let mut scrollbar_state = ScrollbarState::new(months.len())
         .position(state.monthly_table.selected().unwrap_or(0));
-    f.render_stateful_widget(scrollbar, table_area, &mut scrollbar_state);
-}
-
-// ── Region + service tables ───────────────────────────────────────────────────
-
-fn render_region_service(f: &mut Frame, area: Rect, results: &[EmissionsResult]) {
-    let total_lbm: f64 = results.iter().map(|r| r.lbm).sum();
-
-    let halves = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)])
-        .split(area);
-
-    render_ranked_table(f, halves[0], results, " Top Regions ", total_lbm, 10, |r| r.region.clone());
-    render_ranked_table(f, halves[1], results, " Top Services ", total_lbm, 15, |r| r.service.clone());
+    f.render_stateful_widget(scrollbar, area, &mut scrollbar_state);
 }
 
 fn render_ranked_table(

@@ -1,6 +1,7 @@
 mod aws;
 mod display;
 mod period;
+mod summary;
 
 use period::{YearMonth, YearMonthEnd};
 
@@ -16,6 +17,7 @@ use std::{io, path::PathBuf};
 #[derive(Parser, Debug)]
 #[command(
     name = "co2",
+    version = env!("CARGO_PKG_VERSION"),
     about = "AWS Carbon Footprint Reporter — interactive TUI for CO2 emissions data",
     long_about = "\
 AWS Carbon Footprint Reporter
@@ -41,6 +43,9 @@ FROM FILE
       --time-period Start=YYYY-MM-DD,End=YYYY-MM-DD
 
   --profile, --from, and --to are forbidden when --data is used.
+
+UNITS
+  All emissions values are in MTCO2e (Metric Tons of CO2 equivalent).
 ",
 )]
 struct Cli {
@@ -71,10 +76,8 @@ async fn main() -> anyhow::Result<()> {
     let (results, title) = if let Some(path) = &cli.data {
         let contents = std::fs::read_to_string(path)
             .map_err(|e| anyhow::anyhow!("failed to read {}: {}", path.display(), e))?;
-        let cli_output: aws::CliOutput = serde_json::from_str(&contents)
-            .map_err(|e| anyhow::anyhow!("failed to parse JSON: {}", e))?;
-        let results = Vec::<aws::EmissionsResult>::try_from(cli_output)?;
-        let title = year_range_title(&results, path.to_string_lossy().as_ref());
+        let results = aws::parse_emissions_json(&contents)?;
+        let title = summary::year_range_title(&results, path.to_string_lossy().as_ref());
         (results, title)
     } else {
         let profile = cli.profile
@@ -106,24 +109,6 @@ async fn main() -> anyhow::Result<()> {
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
     result
-}
-
-fn year_range_title(results: &[aws::EmissionsResult], fallback: &str) -> String {
-    let mut months: Vec<&str> = results.iter().map(|r| r.month.as_str()).collect();
-    months.sort();
-    months.dedup();
-    match (months.first(), months.last()) {
-        (Some(first), Some(last)) => {
-            let first_year = &first[..4];
-            let last_year = &last[..4];
-            if first_year == last_year {
-                first_year.to_string()
-            } else {
-                format!("{first_year}–{last_year}")
-            }
-        }
-        _ => fallback.to_string(),
-    }
 }
 
 fn run_loop(

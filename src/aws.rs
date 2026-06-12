@@ -42,6 +42,14 @@ struct CliEmissions {
     value: f64,
 }
 
+/// Parses raw AWS CLI JSON (as emitted by `aws sustainability
+/// get-estimated-carbon-emissions`) into our internal record format.
+pub fn parse_emissions_json(json: &str) -> anyhow::Result<Vec<EmissionsResult>> {
+    let cli_output: CliOutput = serde_json::from_str(json)
+        .map_err(|e| anyhow::anyhow!("failed to parse JSON: {}", e))?;
+    Vec::<EmissionsResult>::try_from(cli_output)
+}
+
 impl TryFrom<CliOutput> for Vec<EmissionsResult> {
     type Error = anyhow::Error;
 
@@ -49,7 +57,7 @@ impl TryFrom<CliOutput> for Vec<EmissionsResult> {
         cli.results
             .into_iter()
             .map(|r| {
-                // "2025-01-01T00:00:00.000Z" → "2025-01"
+                // "2025-01-01T00:00:00+00:00" → "2025-01"
                 let month = r.time_period.start.get(..7)
                     .ok_or_else(|| anyhow::anyhow!("unexpected TimePeriod.Start format: {}", r.time_period.start))?
                     .to_string();
@@ -155,6 +163,7 @@ pub async fn get_estimated_carbon_emissions(
 }
 
 #[cfg(test)]
+#[allow(clippy::approx_constant)]
 pub fn mock_results(year: i32) -> Vec<EmissionsResult> {
     let months: Vec<String> = (1..=12).map(|m| format!("{year}-{m:02}")).collect();
 
@@ -196,4 +205,159 @@ pub fn mock_results(year: i32) -> Vec<EmissionsResult> {
             })
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // A representative slice of the AWS CLI's get-estimated-carbon-emissions
+    // output. Extra fields (End, Unit) are present to verify they are tolerated.
+    const SAMPLE_JSON: &str = r#"{
+        "Results": [
+            {
+                "TimePeriod": {
+                    "Start": "2024-01-01T00:00:00+00:00",
+                    "End":   "2024-02-01T00:00:00+00:00"
+                },
+                "DimensionsValues": {
+                    "REGION":  "us-east-1",
+                    "SERVICE": "AmazonEC2"
+                },
+                "EmissionsValues": {
+                    "TOTAL_LBM_CARBON_EMISSIONS": { "Value": 1.5, "Unit": "MTCO2e" },
+                    "TOTAL_MBM_CARBON_EMISSIONS": { "Value": 0.3, "Unit": "MTCO2e" }
+                }
+            },
+            {
+                "TimePeriod": { "Start": "2024-02-01T00:00:00+00:00" },
+                "DimensionsValues": {
+                    "REGION":  "eu-west-1",
+                    "SERVICE": "AmazonS3"
+                },
+                "EmissionsValues": {
+                    "TOTAL_LBM_CARBON_EMISSIONS": { "Value": 0.05 },
+                    "TOTAL_MBM_CARBON_EMISSIONS": { "Value": 0.01 }
+                }
+            }
+        ]
+    }"#;
+
+    #[test]
+    fn parses_sample_into_emissions_results() {
+        let results = parse_emissions_json(SAMPLE_JSON).unwrap();
+        assert_eq!(results.len(), 2);
+
+        assert_eq!(results[0].month, "2024-01");
+        assert_eq!(results[0].region, "us-east-1");
+        assert_eq!(results[0].service, "AmazonEC2");
+        assert_eq!(results[0].lbm, 1.5);
+        assert_eq!(results[0].mbm, 0.3);
+
+        assert_eq!(results[1].month, "2024-02");
+        assert_eq!(results[1].region, "eu-west-1");
+        assert_eq!(results[1].service, "AmazonS3");
+        assert_eq!(results[1].lbm, 0.05);
+        assert_eq!(results[1].mbm, 0.01);
+    }
+
+    #[test]
+    fn missing_emissions_values_default_to_zero() {
+        let json = r#"{
+            "Results": [{
+                "TimePeriod": { "Start": "2024-01-01T00:00:00+00:00" },
+                "DimensionsValues": { "REGION": "us-east-1", "SERVICE": "AmazonEC2" },
+                "EmissionsValues": {}
+            }]
+        }"#;
+        let results = parse_emissions_json(json).unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].lbm, 0.0);
+        assert_eq!(results[0].mbm, 0.0);
+    }
+
+    #[test]
+    fn missing_dimensions_default_to_empty_strings() {
+        let json = r#"{
+            "Results": [{
+                "TimePeriod": { "Start": "2024-01-01T00:00:00+00:00" },
+                "DimensionsValues": {},
+                "EmissionsValues": {
+                    "TOTAL_LBM_CARBON_EMISSIONS": { "Value": 1.0 },
+                    "TOTAL_MBM_CARBON_EMISSIONS": { "Value": 0.2 }
+                }
+            }]
+        }"#;
+        let results = parse_emissions_json(json).unwrap();
+        assert_eq!(results[0].region, "");
+        assert_eq!(results[0].service, "");
+    }
+
+    #[test]
+    fn only_one_emissions_type_present() {
+        let json = r#"{
+            "Results": [{
+                "TimePeriod": { "Start": "2024-01-01T00:00:00+00:00" },
+                "DimensionsValues": { "REGION": "us-east-1", "SERVICE": "AmazonEC2" },
+                "EmissionsValues": {
+                    "TOTAL_LBM_CARBON_EMISSIONS": { "Value": 1.0 }
+                }
+            }]
+        }"#;
+        let results = parse_emissions_json(json).unwrap();
+        assert_eq!(results[0].lbm, 1.0);
+        assert_eq!(results[0].mbm, 0.0);
+    }
+
+    #[test]
+    fn empty_results_array_yields_empty_vec() {
+        let results = parse_emissions_json(r#"{ "Results": [] }"#).unwrap();
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn malformed_time_period_start_fails() {
+        let json = r#"{
+            "Results": [{
+                "TimePeriod": { "Start": "abc" },
+                "DimensionsValues": {},
+                "EmissionsValues": {}
+            }]
+        }"#;
+        let err = parse_emissions_json(json).unwrap_err().to_string();
+        assert!(err.contains("TimePeriod.Start"), "unexpected error: {err}");
+    }
+
+    #[test]
+    fn invalid_json_returns_parse_error() {
+        let err = parse_emissions_json("not json").unwrap_err().to_string();
+        assert!(err.contains("failed to parse JSON"), "unexpected error: {err}");
+    }
+
+    #[test]
+    fn truncates_iso_timestamp_to_year_month() {
+        let json = r#"{
+            "Results": [{
+                "TimePeriod": { "Start": "2025-07-15T12:34:56.789Z" },
+                "DimensionsValues": { "REGION": "us-east-1", "SERVICE": "AmazonEC2" },
+                "EmissionsValues": {
+                    "TOTAL_LBM_CARBON_EMISSIONS": { "Value": 1.0 },
+                    "TOTAL_MBM_CARBON_EMISSIONS": { "Value": 0.1 }
+                }
+            }]
+        }"#;
+        let results = parse_emissions_json(json).unwrap();
+        assert_eq!(results[0].month, "2025-07");
+    }
+
+    #[test]
+    fn mock_results_spans_full_year() {
+        let results = mock_results(2024);
+        let months: std::collections::HashSet<_> =
+            results.iter().map(|r| r.month.clone()).collect();
+        assert_eq!(months.len(), 12);
+        for m in 1..=12 {
+            assert!(months.contains(&format!("2024-{m:02}")));
+        }
+    }
 }

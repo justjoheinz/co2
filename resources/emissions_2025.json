@@ -1,0 +1,760 @@
+{
+    "Results": [
+        {
+            "TimePeriod": {
+                "Start": "2025-01-01T00:00:00+00:00",
+                "End": "2025-02-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "AmazonS3"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 1.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 0.8,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-01-01T00:00:00+00:00",
+                "End": "2025-02-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 1.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 0.8,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-01-01T00:00:00+00:00",
+                "End": "2025-02-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "us-east-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 1.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 0.8,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-02-01T00:00:00+00:00",
+                "End": "2025-03-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "AmazonS3"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 2.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 1.6,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-02-01T00:00:00+00:00",
+                "End": "2025-03-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 2.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 1.6,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-02-01T00:00:00+00:00",
+                "End": "2025-03-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "us-east-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 2.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 1.6,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-03-01T00:00:00+00:00",
+                "End": "2025-04-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "AmazonS3"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 3.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 2.4,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-03-01T00:00:00+00:00",
+                "End": "2025-04-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 3.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 2.4,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-03-01T00:00:00+00:00",
+                "End": "2025-04-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "us-east-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 3.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 2.4,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-04-01T00:00:00+00:00",
+                "End": "2025-05-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "AmazonS3"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 4.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 3.2,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-04-01T00:00:00+00:00",
+                "End": "2025-05-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 4.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 3.2,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-04-01T00:00:00+00:00",
+                "End": "2025-05-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "us-east-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 4.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 3.2,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-05-01T00:00:00+00:00",
+                "End": "2025-06-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "AmazonS3"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 5.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 4.0,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-05-01T00:00:00+00:00",
+                "End": "2025-06-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 5.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 4.0,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-05-01T00:00:00+00:00",
+                "End": "2025-06-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "us-east-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 5.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 4.0,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-06-01T00:00:00+00:00",
+                "End": "2025-07-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "AmazonS3"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 6.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 4.8,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-06-01T00:00:00+00:00",
+                "End": "2025-07-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 6.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 4.8,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-06-01T00:00:00+00:00",
+                "End": "2025-07-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "us-east-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 6.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 4.8,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-07-01T00:00:00+00:00",
+                "End": "2025-08-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "AmazonS3"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 7.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 5.6,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-07-01T00:00:00+00:00",
+                "End": "2025-08-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 7.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 5.6,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-07-01T00:00:00+00:00",
+                "End": "2025-08-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "us-east-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 7.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 5.6,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-08-01T00:00:00+00:00",
+                "End": "2025-09-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "AmazonS3"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 8.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 6.4,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-08-01T00:00:00+00:00",
+                "End": "2025-09-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 8.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 6.4,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-08-01T00:00:00+00:00",
+                "End": "2025-09-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "us-east-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 8.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 6.4,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-09-01T00:00:00+00:00",
+                "End": "2025-10-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "AmazonS3"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 9.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 7.2,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-09-01T00:00:00+00:00",
+                "End": "2025-10-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 9.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 7.2,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-09-01T00:00:00+00:00",
+                "End": "2025-10-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "us-east-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 9.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 7.2,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-10-01T00:00:00+00:00",
+                "End": "2025-11-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "AmazonS3"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 10.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 8.0,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-10-01T00:00:00+00:00",
+                "End": "2025-11-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 10.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 8.0,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-10-01T00:00:00+00:00",
+                "End": "2025-11-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "us-east-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 10.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 8.0,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-11-01T00:00:00+00:00",
+                "End": "2025-12-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "AmazonS3"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 11.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 8.8,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-11-01T00:00:00+00:00",
+                "End": "2025-12-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 11.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 8.8,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-11-01T00:00:00+00:00",
+                "End": "2025-12-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "us-east-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 11.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 8.8,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-12-01T00:00:00+00:00",
+                "End": "2026-01-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "AmazonS3"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 12.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 9.6,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-12-01T00:00:00+00:00",
+                "End": "2026-01-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "eu-central-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 12.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 9.6,
+                    "Unit": "MTCO2e"
+                }
+            }
+        },
+        {
+            "TimePeriod": {
+                "Start": "2025-12-01T00:00:00+00:00",
+                "End": "2026-01-01T00:00:00+00:00"
+            },
+            "DimensionsValues": {
+                "REGION": "us-east-1",
+                "SERVICE": "Other"
+            },
+            "ModelVersion": "v3.0.1",
+            "EmissionsValues": {
+                "TOTAL_LBM_CARBON_EMISSIONS": {
+                    "Value": 12.0,
+                    "Unit": "MTCO2e"
+                },
+                "TOTAL_MBM_CARBON_EMISSIONS": {
+                    "Value": 9.6,
+                    "Unit": "MTCO2e"
+                }
+            }
+        }
+    ]
+}

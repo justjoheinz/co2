@@ -9,8 +9,8 @@ Queries the [AWS Sustainability API](https://docs.aws.amazon.com/aws-cost-manage
 ## Usage
 
 ```
-co2 --profile <profile> --from <YYYY[-MM]> [--to <YYYY[-MM]>]
-co2 --data <file.json>
+co2 --profile <profile> --from <YYYY[-MM]> [--to <YYYY[-MM]>] [--title <text>]
+co2 --data <file.json> [--title <text>]
 ```
 
 ### Live query
@@ -21,9 +21,14 @@ co2 --profile myprofile --from 2024
 
 # Date range
 co2 --profile myprofile --from 2024-06 --to 2025-03
+
+# Custom title
+co2 --profile myprofile --from 2024 --title "Production"
 ```
 
 `--from` is required. `--to` defaults to the current month. Both accept `YYYY` (expands to Jan/Dec respectively) or `YYYY-MM`.
+
+`--profile` falls back to `$AWS_PROFILE` if not specified.
 
 The Sustainability API is only available in `us-east-1`; the tool targets that region automatically.
 
@@ -43,6 +48,19 @@ aws sustainability get-estimated-carbon-emissions \
   --time-period Start=YYYY-MM-DD,End=YYYY-MM-DD
 ```
 
+`--profile`, `--from`, and `--to` are forbidden when `--data` is used.
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `-p, --profile <PROFILE>` | AWS profile name from `~/.aws/config`; falls back to `$AWS_PROFILE` |
+| `--from <YYYY[-MM]>` | Start of query range (required for live queries) |
+| `--to <YYYY[-MM]>` | End of query range, inclusive; defaults to current month |
+| `--data <FILE>` | Read emissions JSON from a file instead of querying AWS |
+| `--title <TEXT>` | Override the title displayed in the TUI |
+| `-V, --version` | Print version |
+
 ## Keybindings
 
 | Key | Action |
@@ -54,8 +72,12 @@ aws sustainability get-estimated-carbon-emissions \
 
 ## Building
 
+Requires [Rust](https://rustup.rs).
+
 ```sh
 cargo build --release
 ```
+
+The binary is written to `target/release/co2`.
 
 Requires an AWS profile with permissions for `sustainability:GetEstimatedCarbonEmissions`.
