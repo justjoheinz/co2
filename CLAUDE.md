@@ -12,6 +12,7 @@ cargo test <name>            # single test by name (substring match)
 cargo test -- --nocapture    # show println! output during tests
 cargo clippy                 # lint
 cargo run -- --data resources/emissions_2024_2025.json  # run from sample file
+cargo install --path . --locked  # install binary; --locked required to avoid coherence errors from fresh dep resolution
 ```
 
 ## Architecture

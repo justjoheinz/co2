@@ -80,4 +80,12 @@ cargo build --release
 
 The binary is written to `target/release/co2`.
 
+To install the binary into `~/.cargo/bin`:
+
+```sh
+cargo install --path . --locked
+```
+
+`--locked` is required to use the pinned dependency versions from `Cargo.lock` and avoid coherence errors from fresh dependency resolution.
+
 Requires an AWS profile with permissions for `sustainability:GetEstimatedCarbonEmissions`.
